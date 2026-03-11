@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Quản lý & Báo cáo điểm danh{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center fw-bold mb-4">Bảng điều khiển Quản trị viên</h1>
+
+    <!-- Nút xuất file điểm danh -->
+    <div class="text-end mb-4">
+        <a href="{{ url_for('export_attendance') }}" class="btn btn-success btn-lg">
+            <i class="bi bi-download me-2"></i>Xuất toàn bộ lịch sử điểm danh (CSV)
+        </a>
+    </div>
+
+    <!-- Phần 1: Báo cáo điểm danh hôm nay -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Báo cáo điểm danh ngày hôm nay</h4>
+        </div>
+        <div class="card-body">
+            {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-bordered align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="text-center">STT</th>
+                                <th>Mã / Tên đăng nhập</th>
+                                <th>Họ và tên</th>
+                                <th>Thời gian điểm danh</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                            <tr>
+                                <td class="text-center">{{ loop.index }}</td>
+                                <td>{{ record.username }}</td>
+                                <td>{{ record.full_name or 'Chưa cập nhật' }}</td>
+                                <td>{{ record.time.strftime('%H:%M:%S - %d/%m/%Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info text-center mt-4 fs-5">
+                    Tổng số lượt điểm danh hôm nay: <strong>{{ records|length }}</strong>
+                </div>
+            {% else %}
+                <div class="alert alert-warning text-center py-4">
+                    <h4 class="mb-3">Chưa có dữ liệu điểm danh hôm nay</h4>
+                    <p class="mb-0">Mọi người có thể bắt đầu điểm danh ngay bây giờ.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Phần 2: Danh sách tất cả tài khoản (cho admin quản lý) -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Quản lý tài khoản người dùng</h4>
+        </div>
+        <div class="card-body">
+            {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Họ và tên</th>
+                                <th>Role</th>
+                                <th>Ngày tạo</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.full_name or 'Chưa cập nhật' }}</td>
+                                <td>
+                                    <span class="badge bg-{% if user.role == 'admin' %}danger{% else %}primary{% endif %}">
+                                        {{ user.role|capitalize }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else 'N/A' }}
+                                </td>
+                                <td>
+                                    {% if user.id != session.user_id %}
+                                    <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Bạn chắc chắn muốn xóa tài khoản {{ user.username }}?\nTất cả lịch sử điểm danh của người này cũng sẽ bị xóa.');">
+                                            Xóa
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted small">(Tài khoản hiện tại)</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    Chưa có tài khoản người dùng nào trong hệ thống.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Nút quay lại điểm danh -->
+    <div class="text-center mt-5">
+        <a href="{{ url_for('attend') }}" class="btn btn-success btn-lg px-5 me-3">
+            Quay lại trang điểm danh
+        </a>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-lg px-5">
+            Đăng xuất
+        </a>
+    </div>
+</div>
+{% endblock %}

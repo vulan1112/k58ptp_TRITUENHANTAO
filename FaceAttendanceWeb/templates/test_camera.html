@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Kiểm tra Webcam{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">🔧 Công cụ Kiểm tra Webcam</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <p class="lead">Xem livestream camera và kiểm tra chất lượng ảnh</p>
+                    </div>
+
+                    <div class="camera-frame mx-auto mb-4" style="max-width: 600px;">
+                        <img src="{{ url_for('video_feed') }}" class="img-fluid w-100" alt="Camera Stream" id="testVideoStream">
+                    </div>
+
+                    <div class="alert alert-success text-center">
+                        <h5 class="mb-2">✓ Webcam đang hoạt động</h5>
+                        <p class="mb-0 text-muted">Nếu nhìn thấy hình ảnh trên, webcam của bạn hoạt động bình thường.</p>
+                    </div>
+
+                    <div class="row text-center">
+                        <div class="col-md-6 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6>Tiêu chí tốt:</h6>
+                                <ul class="list-unstyled small text-start">
+                                    <li>✓ Hình ảnh rõ nét</li>
+                                    <li>✓ Ánh sáng đủ</li>
+                                    <li>✓ Không bị lag</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6>Nếu có vấn đề:</h6>
+                                <ul class="list-unstyled small text-start">
+                                    <li>🔄 Nhấn F5 để reload</li>
+                                    <li>🔌 Kiểm tra kết nối USB</li>
+                                    <li>⚙️ Kiểm tra driver camera</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('attend') }}" class="btn btn-success btn-lg me-2">
+                            Quay lại Điểm danh
+                        </a>
+                        <button class="btn btn-secondary btn-lg" onclick="location.reload();">
+                            🔄 Reload Camera
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('testVideoStream');
+    video.onerror = function() {
+        console.log('Camera error, retrying...');
+        this.src = this.src.split('?')[0] + '?' + new Date().getTime();
+    };
+</script>
+{% endblock %}

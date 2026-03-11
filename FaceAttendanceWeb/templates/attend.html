@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Điểm danh thời gian thực{% endblock %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <h1 class="display-5 fw-bold mb-3">Điểm danh bằng nhận dạng khuôn mặt</h1>
+    <p class="lead text-muted mb-5">Hãy nhìn thẳng vào camera để hệ thống tự động nhận diện và ghi nhận</p>
+
+    <div class="camera-frame mx-auto" style="max-width: 800px;">
+        <img src="{{ url_for('video_feed') }}" class="img-fluid w-100" alt="Camera Stream" id="videoStream">
+    </div>
+
+    <div class="mt-5">
+        <p class="fs-5 text-secondary">Đang hoạt động... (Nhấn F5 nếu hình ảnh không hiển thị)</p>
+        <a href="{{ url_for('register') }}" class="btn btn-outline-success btn-lg mt-3">Chưa có khuôn mặt? Đăng ký ngay</a>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('videoStream');
+    video.onerror = function() {
+        this.src = this.src + '?' + new Date().getTime();  // retry khi lỗi
+    };
+</script>
+{% endblock %}

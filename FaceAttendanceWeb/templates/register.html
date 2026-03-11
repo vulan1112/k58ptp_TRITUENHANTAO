@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng ký khuôn mặt{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow-sm mt-5">
+            <div class="card-header bg-success text-white text-center py-4">
+                <h4 class="mb-0">Đăng ký khuôn mặt mới</h4>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- Tabs chọn phương thức đăng ký -->
+                <ul class="nav nav-tabs mb-4" id="registerTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab" aria-controls="upload" aria-selected="true">
+                            Upload ảnh từ máy tính
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="camera-tab" data-bs-toggle="tab" data-bs-target="#camera" type="button" role="tab" aria-controls="camera" aria-selected="false">
+                            Chụp trực tiếp từ webcam
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="registerTabContent">
+                    <!-- Tab Upload ảnh -->
+                    <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+                        <form method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="method" value="upload">
+
+                            <div class="mb-3">
+                                <label for="username_upload" class="form-label fw-bold">Mã sinh viên / Tên đăng nhập <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg" id="username_upload" name="username" placeholder="VD: K58KTP001" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="full_name_upload" class="form-label fw-bold">Họ và tên đầy đủ <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg" id="full_name_upload" name="full_name" placeholder="VD: Vũ Lân" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="photo" class="form-label fw-bold">Chọn ảnh khuôn mặt <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control form-control-lg" id="photo" name="photo" accept="image/*" required>
+                                <div class="form-text text-muted mt-2">
+                                    Ảnh rõ nét, chính diện, ánh sáng tốt. Không đeo kính râm hoặc khẩu trang.
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg">Đăng ký từ ảnh upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab Chụp từ webcam -->
+                    <div class="tab-pane fade" id="camera" role="tabpanel" aria-labelledby="camera-tab">
+                        <div class="text-center mb-4">
+                            <video id="video" width="100%" height="auto" autoplay playsinline muted style="border: 4px solid #198754; border-radius: 12px; max-height: 400px;"></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="username_camera" class="form-label fw-bold">Mã sinh viên / Tên đăng nhập <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="username_camera" placeholder="VD: K58KTP001" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="full_name_camera" class="form-label fw-bold">Họ và tên đầy đủ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="full_name_camera" placeholder="VD: Vũ Lân" required>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button id="startCamera" class="btn btn-primary btn-lg">Bật webcam & cho phép truy cập</button>
+                            <button id="capture" class="btn btn-warning btn-lg" disabled>Chụp ảnh ngay</button>
+                            <button id="retake" class="btn btn-secondary btn-lg" style="display:none;">Chụp lại</button>
+                            <button id="submitCapture" class="btn btn-success btn-lg" style="display:none;">Đăng ký ảnh vừa chụp</button>
+                        </div>
+
+                        <!-- Form ẩn để gửi ảnh base64 -->
+                        <form id="captureForm" method="POST" style="display:none;">
+                            <input type="hidden" name="method" value="capture">
+                            <input type="hidden" name="username" id="capture_username">
+                            <input type="hidden" name="full_name" id="capture_full_name">
+                            <input type="hidden" name="photo_data" id="photo_data">
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <small class="text-muted">Sau khi đăng ký thành công, bạn có thể điểm danh ngay lập tức.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript xử lý webcam -->
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const startBtn = document.getElementById('startCamera');
+    const captureBtn = document.getElementById('capture');
+    const retakeBtn = document.getElementById('retake');
+    const submitBtn = document.getElementById('submitCapture');
+    let stream = null;
+
+    startBtn.addEventListener('click', async () => {
+        try {
+            // Lấy danh sách thiết bị camera
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            let constraints = { video: { facingMode: 'user', width: 640, height: 480 } };
+
+            // Ưu tiên chọn webcam ngoài (thường có label chứa "USB", "External", "HD Camera"...)
+            const externalCam = videoDevices.find(dev => 
+                /usb|external|hd|logitech|microsoft/i.test(dev.label.toLowerCase())
+            );
+
+            if (externalCam) {
+                constraints.video.deviceId = { exact: externalCam.deviceId };
+                console.log("→ Sử dụng webcam ngoài:", externalCam.label);
+            }
+
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+            captureBtn.disabled = false;
+            startBtn.disabled = true;
+        } catch (err) {
+            console.error(err);
+            if (err.name === 'NotReadableError') {
+                alert('Camera đang bị chương trình khác chiếm dụng (có thể trang Điểm danh). Hãy đóng tab Điểm danh trước rồi thử lại.');
+            } else {
+                alert('Không mở được webcam: ' + err.message);
+            }
+        }
+    });
+
+    // Chụp ảnh
+    captureBtn.addEventListener('click', () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Ẩn nút chụp, hiện nút chụp lại & đăng ký
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'inline-block';
+        submitBtn.style.display = 'inline-block';
+
+        // Lấy base64 ảnh
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        document.getElementById('photo_data').value = dataUrl;
+    });
+
+    // Chụp lại
+    retakeBtn.addEventListener('click', () => {
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+    });
+
+    // Submit form upload (tab upload)
+    document.querySelector('form[method="POST"][enctype="multipart/form-data"]').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch('/student/register_face', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                alert(data.message);
+                window.location.href = '/attend';
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra khi gửi yêu cầu: ' + error.message);
+        }
+    });
+
+    // Submit ảnh chụp từ webcam (tab camera)
+    submitBtn.addEventListener('click', async () => {
+        const username = document.getElementById('username_camera').value.trim();
+        const full_name = document.getElementById('full_name_camera').value.trim();
+        const photo_data = document.getElementById('photo_data').value;
+
+        if (!username || !full_name || !photo_data) {
+            alert('Vui lòng nhập đầy đủ thông tin và chụp ảnh trước.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('method', 'capture');
+        formData.append('username', username);
+        formData.append('full_name', full_name);
+        formData.append('photo_data', photo_data);
+
+        try {
+            const response = await fetch('/student/register_face', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                alert(data.message);
+                window.location.href = '/attend';
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        } catch (error) {
+            alert('Có lỗi xảy ra: ' + error.message);
+        }
+    });
+
+    // Dừng webcam khi rời trang
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}
